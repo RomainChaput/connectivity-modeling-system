@@ -4,15 +4,15 @@
 	Buoyancy          	= .false.
 	buoyancyFilename  	= "buoyancy_example"
 	!==============================================================!
-	! Seascape Module
-	polygon		        = .true.
-	polyFilename 	    	= "poly_example.xyz"
-	settlementStart	  	= 2		!in days
+	!Adding marine habitats 
+	polygon                 = .true.
+	polyFilename            = "florida_keys_asaxatilis.xyz"
+	settlementStart         = 22          !in days
 	!==============================================================!
-	! Probability Matrix of Vertical Migration
-	ibio 			= .false.
-	ibioFilename	    	= "vert_matrix_example"
-	ibioTimeStep	    	= 259200	!in seconds
+	!Adding probability matrix to move particle up and down 
+	ibio                    = .true.
+	ibioFilename            = "vert_matrix"
+	ibioTimeStep            = 86400      !in seconds
 	!==============================================================!
 	! Mortality Rate
 	mort			= .false.
@@ -38,4 +38,27 @@
 	outputtemp		= .false.
 	outputsaln		= .false.
 	!==============================================================!
+	!Add two phases orientation: cardinal when far and habitat map orientation when close
+	!Need to fill maxDistance and Cardinal_heading
+	Mix_orient	= .false.
+	!====================================================================!
+	!Add orientation based on habitat map (correlated biased random walk)
+	Orient           = .false.    ! for habitat orientation alone
+	maxDistance      = 2          !in km
+	!====================================================================!
+	!Add swimming against the currents
+	Rheotaxis	= .false.
+	!Kappa		= 5.0 ! to change in the source code (Line 159 on mod_orientation.f90)
+	!====================================================================!
+	!Add cardinal orientation
+	Cardinal	 = .false. ! for cardinal orientation alone
+	Cardinal_heading = -180.0  ! Cardinal heading in degree (-180 to 180 East=0)
+	!Kappa		= 5.0 ! to change in the source code (Line 186 on mod_orientation.f90
+	!====================================================================!
+	!Parameters necessary to all orientation behaviors
+	swimmingSpeedHatch  = 2.3950         !in cm/s
+	swimmingSpeedSettle = 30.86       !in cm/s
+	horDiffOrient       = 0.7         !horizontal diffusivity
+	orientStart         = 1166400       !in seconds
+	
 	$end
