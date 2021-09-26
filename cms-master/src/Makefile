@@ -18,7 +18,8 @@ default: cms getdata
 
 MODS =  mod_kinds.o def_constants.o def_nests.o def_particle.o def_globalvariables.o   \
         mod_random.o mod_netcdf.o mod_iounits.o mod_nciorw.o mod_calendar.o mod_ibio.o mod_netcdfoutput.o \
-        mod_turb.o mod_strata.o mod_reef.o mod_diffpart.o mod_directory.o mod_mixedlayerphysics.o
+        mod_turb.o mod_strata.o mod_reef.o mod_diffpart.o mod_directory.o mod_mixedlayerphysics.o \
+	mod_orientation.o
 
 OBJS =  input.o output.o restart.o util.o loop.o rungekutta.o findnest.o move.o updateloc.o \
         getphysicaldata.o getfilename.o getnestinfo.o lonlat2ij.o fldinterp.o dealloc.o cms.o 
@@ -79,6 +80,7 @@ mod_diffpart.o: mod_diffpart.f90
 mod_nciorw.o: mod_nciorw.f90
 mod_mixedlayerphysics.o: mod_mixedlayerphysics.f90
 mod_getdata.o: mod_getdata.f90
+mod_orientation: mod_orientation.f90
 
 .PHONY: clean
 clean:   

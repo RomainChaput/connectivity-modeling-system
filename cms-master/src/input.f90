@@ -25,11 +25,13 @@
 SUBROUTINE load_mod_input
 
  USE globalvariables
+ USE constants
  USE mod_reef
  USE mod_ibio
  USE mod_diffpart
  USE mod_strata
  USE mod_buoyancy
+ USE mod_orientation ! added
  
 !loads strata file
  IF (strata) THEN
@@ -43,8 +45,8 @@ SUBROUTINE load_mod_input
   ELSE
   call load_reef_data( trim(fileinput)//trim(polyFilename))
  ENDIF     
- ENDIF      
-  
+ ENDIF
+
 !loads ibio file  
  IF (ibio .or. massSpawning) THEN
   call load_ibio_data( trim(fileinput)//trim(ibioFilename))
@@ -55,9 +57,15 @@ SUBROUTINE load_mod_input
   call load_diffpart_data( trim(fileinput)//trim(diffpartFilename))
  ENDIF
 
+!load buoyancy characteristics for particles
   IF (buoyancy) THEN
    call load_buoyancy( trim(fileinput)//trim(buoyancyFilename))
  ENDIF
+ 
+!loads center polygon file for orientation
+IF (Orient .or. Mix_orient) THEN
+	call load_center_data( trim(fileinput)//"centers_"//trim(polyFilename))
+ENDIF
 
 END SUBROUTINE load_mod_input
 
@@ -216,7 +224,11 @@ SUBROUTINE load_ibm
    massSpawning, larvaStart, &
    tidalMovement, tstStart, &
    strata, strataFilename, &
-   outputtemp, outputsaln
+   outputtemp, outputsaln, &
+   Mix_orient, Orient, maxDistance, &! added for reef orientation and two phases orientation
+   Rheotaxis, Cardinal, Cardinal_heading, &! added for rheotaxis and cardinal orientation
+   swimmingSpeedHatch, swimmingSpeedSettle, &
+   horDiffOrient, orientStart
 
  polyFilename = "Polygon file"
  ibioFilename = "Ibio file"
@@ -246,6 +258,10 @@ SUBROUTINE load_ibm
   massspawning=.false. 
   tidalMovement=.false.
   strata=.false.
+  Mix_orient=.false.
+  Orient=.false.! added to give option without orientation
+  Rheotaxis=.false.
+  Cardinal=.false.
  ENDIF
 
 END SUBROUTINE load_ibm
@@ -267,7 +283,7 @@ SUBROUTINE load_release_info
 
  character(char_len)     :: rfname, locname 
  real (kind = real_kind) :: lon, lat, depth
- integer (kind=int_kind) :: id,num_rel,year, month, day, seconds, &
+ integer (kind=int_kind) :: id, num_rel, year, month, day, seconds, &
      layer, strataStart, & !ibio
      i, iunit, sze !number of release locations
  logical (kind=log_kind) :: file_exists
@@ -286,7 +302,7 @@ SUBROUTINE load_release_info
   stop
  ENDIF
 
-!read each line of file file    
+!read each line of file
  DO i=1,sze
   read (iunit,*) id,lon,lat,depth,num_rel, year, month, day,seconds
   DO while (lon .lt. 0.) 

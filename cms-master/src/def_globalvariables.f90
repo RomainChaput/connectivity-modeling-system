@@ -65,13 +65,15 @@ MODULE globalvariables
                                   restartfromfile=.false., &
                                   mixedlayerphysics=.false., agrid=.true., &
                                   withibm, AxUsed(4), notmove, strata, &
-                                  writerestart=.false. ! needed for cktidalmovement
+                                  writerestart=.false., & ! needed for cktidalmovement
+								  Mix_orient, Orient, Cardinal, & ! added reef and cardinal orientation
+								  Rheotaxis ! added rheotaxis behavior
  real (kind = real_kind)       :: dens_particle, diam_particle, &
                                   horDiff(max_nests)=-1., vertDiff(max_nests)=-1., &
-                                  horDiffOrient, halflife, maxDistance, &
+                                  horDiffOrient, halflife, maxDistance, & ! maxDistance = Beta
                                   orientAbility, swimmingSpeedHatch, &
                                   swimmingSpeedSettle, mixedlayerwmax, &
-                                  settlementStart
+                                  settlementStart, kappa, Cardinal_heading ! added kappa and cardinal heading
  logical (kind=log_kind)       :: nextFile(4)
 
 !inputfiles

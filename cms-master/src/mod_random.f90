@@ -1,9 +1,9 @@
 !****************************************************************************
 !* System: Connectivity Modeling System (CMS)                               *
 !* File : mod_random.f90                                                    *
-!* Last Modified: 2016-04-01                                                *
+!* Last Modified: 2020-03-25 by Romain Chaput, Mohamed Iskandarani                                             *
 !* Code contributors: Claire B. Paris, Ana Carolina Vaz, Judith Helgers,    * 
-!*                    Ashwanth Srinivasan                                   *
+!*                    Ashwanth Srinivasan                                  *
 !*                                                                          *
 !* Copyright (C) 2011, University of Miami                                  *
 !*                                                                          *
@@ -34,6 +34,10 @@ USE mod_kinds
 	
 IMPLICIT NONE
 
+real (kind=real_kind), private      :: zero = 0.0, half = 0.5, one = 1.0, two = 2.0,   &
+                      vsmall = TINY(1.0), vlarge = HUGE(1.0)
+private            :: integral
+integer (kind=real_kind), PARAMETER :: dp = SELECTED_REAL_KIND(12, 60)
 
 real (kind = dbl_kind) , save :: uniform(97),c,cd,cm
 integer (kind=int_kind), save :: i97,j97
@@ -286,6 +290,134 @@ SUBROUTINE test_uniform_int
 END SUBROUTINE
 
 !**************************************************************
+
+SUBROUTINE random_von_Mises(k, first, fn_val)
+
+!     Algorithm VMD from:
+!     Dagpunar, J.S. (1990) `Sampling from the von Mises distribution via a
+!     comparison of random numbers', J. of Appl. Statist., 17, 165-168.
+
+!     Fortran 90 code by Alan Miller
+!     CSIRO Division of Mathematical & Information Sciences
+
+!     Arguments:
+!     k (real)        parameter of the von Mises distribution.
+!     first (logical) set to .TRUE. the first time that the function
+!                     is called, or the first time with a new value
+!                     for k.   When first = .TRUE., the function sets
+!                     up starting values and may be very much slower.
+
+REAL (KIND = real_kind), INTENT(IN)     :: k
+LOGICAL (KIND = log_kind), INTENT(IN)  :: first
+REAL   (KIND = real_kind), INTENT(OUT)              :: fn_val
+
+!     Local variables
+
+INTEGER (KIND = int_kind)          :: j, n
+INTEGER (KIND = int_kind), SAVE    :: nk
+REAL (KIND = real_kind), PARAMETER  :: pi = 3.14159265
+REAL (KIND = real_kind), SAVE       :: p(20), theta(0:20)
+REAL (KIND = real_kind)            :: sump, r, th, lambda, rlast
+REAL (KIND = dp)        :: dk
+
+IF (first) THEN                        ! Initialization, if necessary
+  IF (k < zero) THEN
+    WRITE(*, *) '** Error: argument k for random_von_Mises = ', k
+    RETURN
+  END IF
+
+  nk = k + k + one
+  IF (nk > 20) THEN
+    WRITE(*, *) '** Error: argument k for random_von_Mises = ', k
+    RETURN
+  END IF
+
+  dk = k
+  theta(0) = zero
+  IF (k > half) THEN
+
+!     Set up array p of probabilities.
+
+    sump = zero
+    DO j = 1, nk
+      IF (j < nk) THEN
+        theta(j) = ACOS(one - j/k)
+      ELSE
+        theta(nk) = pi
+      END IF
+
+!     Numerical integration of e^[k.cos(x)] from theta(j-1) to theta(j)
+
+      CALL integral(theta(j-1), theta(j), p(j), dk)
+      sump = sump + p(j)
+    END DO
+    p(1:nk) = p(1:nk) / sump
+  ELSE
+    p(1) = one
+    theta(1) = pi
+  END IF                         ! if k > 0.5
+END IF                           ! if first
+
+CALL RANDOM_NUMBER(r)
+DO j = 1, nk
+  r = r - p(j)
+  IF (r < zero) EXIT
+END DO
+r = -r/p(j)
+
+DO
+  th = theta(j-1) + r*(theta(j) - theta(j-1))
+  lambda = k - j + one - k*COS(th)
+  n = 1
+  rlast = lambda
+
+  DO
+    CALL RANDOM_NUMBER(r)
+    IF (r > rlast) EXIT
+    n = n + 1
+    rlast = r
+  END DO
+
+  IF (n .NE. 2*(n/2)) EXIT         ! is n even?
+  CALL RANDOM_NUMBER(r)
+END DO
+
+fn_val = SIGN(th, (r - rlast)/(one - rlast) - half)
+RETURN
+END SUBROUTINE random_von_Mises
+
+!****************************************************************
+
+SUBROUTINE integral(a, b, result, dk)
+
+!     Gaussian integration of exp(k.cosx) from a to b.
+
+REAL (dp), INTENT(IN) :: dk
+REAL, INTENT(IN)      :: a, b
+REAL, INTENT(OUT)     :: result
+
+!     Local variables
+
+REAL (dp)  :: xmid, range, x1, x2,                                    &
+  x(3) = (/0.238619186083197_dp, 0.661209386466265_dp, 0.932469514203152_dp/), &
+  w(3) = (/0.467913934572691_dp, 0.360761573048139_dp, 0.171324492379170_dp/)
+INTEGER    :: i
+
+xmid = (a + b)/2._dp
+range = (b - a)/2._dp
+
+result = 0._dp
+DO i = 1, 3
+  x1 = xmid + x(i)*range
+  x2 = xmid - x(i)*range
+  result = result + w(i)*(EXP(dk*COS(x1)) + EXP(dk*COS(x2)))
+END DO
+
+result = result * range
+RETURN
+END SUBROUTINE integral
+
+!*****************************************************************
 	
 END MODULE mod_random
 

@@ -1,7 +1,7 @@
 !****************************************************************************
 !* System: Connectivity Modeling System (CMS)                               *
 !* File : move.f90                                                          *
-!* Last Modified: 2016-09-14                                                *
+!* Last Modified: 2020-03-25 by Romain Chaput, Mohamed Iskandarani                                                                  *
 !* Code contributors: Claire B. Paris, Ana Carolina Vaz, Judith Helgers,    * 
 !*                    Ashwanth Srinivasan                                   *
 !*                                                                          *
@@ -29,6 +29,7 @@ SUBROUTINE move(startR, endR,time_t)
  USE mod_mort
  USE mod_turb
  USE mod_mixedlayerphysics
+ USE mod_orientation
 
  IMPLICIT NONE
 
@@ -52,7 +53,9 @@ SUBROUTINE move(startR, endR,time_t)
     ztemp,zsaln,zdens, &
     upperdepth, &
     diam, dens, &
-    uturb, vturb, wturb !for turbulence 
+    uturb, vturb, wturb, &!for turbulence 
+	lon_reef, lat_reef, lon_old, lat_old, &
+	uorient, vorient, Kappa_reef, reef_dist ! present in globalvariables.f90
  
  logical (kind=log_kind)  :: flag(10),landFlag,flagMort
 
@@ -226,12 +229,55 @@ SUBROUTINE move(startR, endR,time_t)
         CALL calc_turb(real(timestep),horDiff(ngrid), vertDiff(ngrid),uturb,vturb, wturb)
         uf = uf + uturb
         vf = vf + vturb
-        !IF (wf .ne. 0.) THEN
+        IF (wf .ne. 0.) THEN
         wf = wf + wturb
-        !ENDIF
+        ENDIF
 !       print *, "u en v after turb", u,v
        ENDIF
       ENDIF
+
+!		Adding velocity from continuous orientation	
+		IF (Mix_orient) THEN
+			IF (run_time > orientStart ) THEN
+				CALL nearest_reef(xold, yold, lon_reef, lat_reef, Kappa_reef, reef_dist)
+				IF (reef_dist > maxDistance) THEN
+				!CALL calc_rheotaxis(vf, uf, run_time, vorient, uorient) ! uncomment for rhetaxis + reef orientation
+				CALL calc_cardinal(Cardinal_heading, run_time, vorient, uorient)
+				ELSE
+				CALL calc_orient(xold, yold, lon_old, lat_old, lon_reef, lat_reef, Kappa_reef, reef_dist, run_time, h1,vorient, uorient)
+				ENDIF
+				uf = uf + uorient
+				vf = vf + vorient
+			ENDIF
+		ENDIF
+
+!		Adding velocity from reef orientation. Based on Staaterman et al., 2012		
+		IF (Orient) THEN
+			IF (run_time > orientStart ) THEN
+				CALL nearest_reef(xold, yold, lon_reef, lat_reef, Kappa_reef, reef_dist)
+				CALL calc_orient(xold, yold, lon_old, lat_old, lon_reef, lat_reef, Kappa_reef, reef_dist, run_time, h1,vorient, uorient)
+				uf = uf + uorient
+				vf = vf + vorient
+			ENDIF
+		ENDIF
+		
+!		Adding velocity from rheotaxis orientation			
+		IF (Rheotaxis) THEN
+			IF (run_time > orientStart) THEN
+			CALL calc_rheotaxis(vf, uf, run_time, vorient, uorient)
+				uf = uf + uorient
+				vf = vf + vorient
+			ENDIF
+		ENDIF	
+		
+!		Adding velocity from cardinal orientation		
+		IF (Cardinal) THEN
+			IF (run_time > orientStart) THEN
+			CALL calc_cardinal(Cardinal_heading, run_time, vorient, uorient)
+				uf = uf + uorient
+				vf = vf + vorient
+			ENDIF
+		ENDIF
 
 !     calculate new position 
       CALL updateloc(xold,yold,zold,uf,vf,wf,flag,h1,xnew,ynew,znew,upperdepth)
