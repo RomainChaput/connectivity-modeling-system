@@ -13,7 +13,7 @@ include ../arch/mpi_compiler
 	@echo "Must have an explicit rule for" $*
 .c:
 	@echo "Must have an explicit rule for" $*
-
+	
 default: cms getdata
 
 MODS =  mod_kinds.o def_constants.o def_nests.o def_particle.o def_globalvariables.o   \
