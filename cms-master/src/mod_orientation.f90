@@ -6,7 +6,7 @@
 !*                                                                          *
 !****************************************************************************
 ! Give orientation abilities to particles in the CMS. Follows biased correlated random walk as described by Codling et al., 2004 - MEPS and Staaterman et al., 2012 - JTB
-! See Paris et al., to be submitted, for a different version of orientation module with a similar purpose
+! Published in Chaput R, Sochala P, Miron P, Kourafalou V, Iskandarani M, 2022. Quantitative uncertainty estimation in biophysical models of fish larval connectivity in the Florida Keys. ICES Journal of Marine Science.
 
 MODULE mod_orientation
 
